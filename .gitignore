@@ -1,0 +1,5 @@
+.env
+.ferramentas/
+fonte-jar/
+node_modules/
+*.log

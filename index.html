@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1f3a">
+<title>IBS e CBS no Simples Nacional — calculadora oficial</title>
+<meta name="description" content="Calcule o DAS pela LC 123/2006 e o IBS/CBS destacado na NF-e pelo motor oficial da Receita Federal (NT 2026.005).">
+<link rel="icon" href="icone.svg" type="image/svg+xml">
+<link rel="preload" as="font" type="font/woff2" href="plus-jakarta.woff2" crossorigin>
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header class="topo">
+  <div class="largura">
+    <nav class="nav">
+      <a class="marca" href="./"><span class="marca-sinal" aria-hidden="true"></span>Calculadora Simples</a>
+      <span class="motor" id="motor">motor oficial</span>
+    </nav>
+    <p class="selo">LC 123/2006 · LC 214/2025 · NT 2026.005</p>
+    <h1>IBS e CBS no <span class="destaque">Simples Nacional</span></h1>
+    <p class="sub">Calcule o DAS pela LC 123 e o IBS/CBS destacado na nota pelo <strong>motor oficial da Receita Federal</strong>. O crédito do comprador é o valor destacado.</p>
+    <p class="versao" id="versao">Conectando ao motor oficial…</p>
+  </div>
+</header>
+
+<main class="largura">
+  <div class="aviso" role="note">
+    <strong>Cálculo por operação a partir de 2027.</strong> Em 2026 o IBS/CBS ainda é o ano-teste e não há cálculo por item no motor. O DAS abaixo é uma <strong>estimativa</strong> pela LC 123; as alíquotas efetivas de IBS/CBS saem no PGDAS-D e podem ser ajustadas.
+  </div>
+
+  <form id="form" novalidate>
+    <div class="grade">
+      <section class="cartao" aria-labelledby="titulo-empresa">
+        <h2 id="titulo-empresa"><span class="passo">1</span> Sua empresa</h2>
+
+        <div class="campos">
+          <label>RBT12 — receita bruta dos 12 meses
+            <input id="rbt12" inputmode="decimal" autocomplete="off" value="600.000,00">
+          </label>
+          <label>Folha de salários — 12 meses
+            <input id="folha" inputmode="decimal" autocomplete="off" value="120.000,00">
+            <span class="ajuda">Só entra no Fator R (atividade 09).</span>
+          </label>
+          <label>Anexo do Simples
+            <select id="anexo">
+              <option value="I">I — Comércio</option>
+              <option value="II">II — Indústria</option>
+              <option value="III">III — Serviços gerais</option>
+              <option value="IV">IV — Serviços específicos</option>
+              <option value="V">V — Serviços intelectuais</option>
+            </select>
+          </label>
+          <label>Atividade na nota (cAtivSN)
+            <select id="atividade"><option value="">Carregando catálogo…</option></select>
+            <span class="ajuda" id="atividadeAjuda">Mercadorias: NF-e (55) e NFC-e (65).</span>
+          </label>
+        </div>
+
+        <div class="das" id="dasBox">
+          <div class="das-linha"><span>Alíquota efetiva do DAS</span><strong id="aliqDas">—</strong></div>
+          <div class="das-linha"><span>DAS sobre esta operação</span><strong id="dasValor">—</strong></div>
+          <div class="das-linha"><span>Parcela CBS estimada no DAS</span><strong id="parcelaCbs">—</strong></div>
+          <p class="fonte" id="dasFonte"></p>
+        </div>
+
+        <details class="aliquotas" id="aliquotasBox">
+          <summary>Alíquotas efetivas de IBS e CBS (PGDAS-D)</summary>
+          <div class="campos curto">
+            <label>IBS efetivo (%)
+              <input id="pIBS" inputmode="decimal" autocomplete="off" value="0,1000">
+            </label>
+            <label>CBS efetivo (%)
+              <input id="pCBS" inputmode="decimal" autocomplete="off" value="">
+            </label>
+          </div>
+          <p class="ajuda">O motor oficial usa exatamente estes percentuais. A estimativa aplica a fração de CBS do DAS e mantém o IBS-teste de 0,1% (2027 revisto pela LC 214). <strong>Confira no PGDAS-D.</strong></p>
+          <button type="button" class="secundario pequeno" id="reestimar">Recalcular estimativa</button>
+        </details>
+      </section>
+
+      <section class="cartao" aria-labelledby="titulo-operacao">
+        <h2 id="titulo-operacao"><span class="passo">2</span> Operação</h2>
+
+        <div class="campos linha2">
+          <label>Data do fato gerador
+            <input type="date" id="data" min="2027-01-01" value="2027-01-01">
+          </label>
+          <label>Documento fiscal
+            <select id="tpDoc">
+              <option value="55">NF-e (55)</option>
+              <option value="65">NFC-e (65)</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="itens-topo">
+          <span>Itens da nota</span>
+          <button type="button" class="secundario pequeno" id="addItem">+ Item</button>
+        </div>
+        <div id="itens" class="itens"></div>
+
+        <p class="dica">Informe o NCM do produto. O cClassTrib padrão <strong>000001</strong> é a tributação integral; outros códigos podem exigir NCM/NBS específico e a API explicará a inconsistência.</p>
+
+        <button type="submit" class="grande" id="calcular">Calcular pelo motor oficial</button>
+        <p class="micro">O cálculo roda na API oficial do Simples Nacional (Receita Federal), em <span id="apiHost">—</span>. O DAS é estimado localmente.</p>
+      </section>
+    </div>
+  </form>
+
+  <section class="cartao resultado" id="resultado" aria-live="polite">
+    <div class="vazio">
+      <h2>Resultado</h2>
+      <p>Preencha os dados e clique em <strong>Calcular pelo motor oficial</strong>.</p>
+    </div>
+  </section>
+
+  <section class="fora" aria-labelledby="titulo-fora">
+    <h2 id="titulo-fora">Optou por IBS/CBS fora do DAS?</h2>
+    <p>Se a empresa exerceu a opção pelo regime regular do IBS/CBS (modelo híbrido), o cálculo não é feito por este motor do Simples. Use a <a href="https://silvioalbqrq.github.io/calculadora-regime-regular/" target="_blank" rel="noopener">calculadora de regime regular</a>.</p>
+    <p class="micro">Acima do sublimite de R$ 3,6 milhões, o ICMS/ISS sai do DAS por imposição; a estimativa de DAS desta página deixa de valer.</p>
+  </section>
+
+  <footer>
+    <p>Motor oficial: <a href="https://github.com/ReceitaFederal/calculadora-rtc-simples-nacional" target="_blank" rel="noopener">calculadora-rtc-simples-nacional</a> (Receita Federal, MIT). Base de dados gerada pelas migrações de <a href="https://github.com/ReceitaFederal/calculadora-rtc-regime-regular" target="_blank" rel="noopener">calculadora-rtc-regime-regular</a>.</p>
+    <p>Estimativas de DAS: LC 123/2006, Anexos I a V. Este site não substitui o PGDAS-D nem a orientação de um contador.</p>
+  </footer>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

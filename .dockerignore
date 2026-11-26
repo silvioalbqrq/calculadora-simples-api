@@ -1,0 +1,6 @@
+.git
+.gitignore
+.ferramentas/
+fonte-jar/
+node_modules/
+calculadora-service/.env
