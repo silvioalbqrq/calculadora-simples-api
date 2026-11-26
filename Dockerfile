@@ -11,7 +11,7 @@ WORKDIR /app
 
 COPY motor-simples/target/api-simples-nacional.jar ./motor-simples/target/api-simples-nacional.jar
 COPY motor-simples/calculadora/db/calculadora-pro.db ./motor-simples/calculadora/db/calculadora-pro.db
-COPY calculadora-service/package.json calculadora-service/launcher.mjs ./calculadora-service/
+COPY calculadora-service/launcher.mjs ./calculadora-service/
 WORKDIR /app/calculadora-service
 
 ENV JAVA_EXE=/opt/java/openjdk/bin/java
