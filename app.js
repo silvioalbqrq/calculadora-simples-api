@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const API = window.API_BASE || "/api";
+ const API = window.API_BASE || "https://calculadora-simples-api-1.onrender.com";
   // cbsFixo: percentual de CBS já escolhido (estimado ou digitado). Null = recalcular pelo anexo.
   const state = { atividades: [], versao: null, cbsFixo: null, calculando: false };
 
