@@ -4,8 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0b1f3a">
-<title>IBS e CBS no Simples Nacional — calculadora oficial</title>
-<meta name="description" content="Calcule o DAS pela LC 123/2006 e o IBS/CBS destacado na NF-e pelo motor oficial da Receita Federal (NT 2026.005).">
+<title>IBS e CBS no Simples Nacional — calculadora</title>
+<meta name="description" content="Calcule o DAS pela LC 123/2006 e o IBS/CBS destacado na NF-e pelo motor do Simples Nacional da Receita Federal (NT 2026.005).">
+<meta property="og:title" content="IBS e CBS no Simples Nacional — calculadora">
+<meta property="og:description" content="DAS pela LC 123/2006 e IBS/CBS destacado na NF-e pelo motor do Simples Nacional da Receita Federal (NT 2026.005).">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
 <link rel="icon" href="icone.svg" type="image/svg+xml">
 <link rel="preload" as="font" type="font/woff2" href="plus-jakarta.woff2" crossorigin>
 <link rel="stylesheet" href="estilo.css">
@@ -74,7 +78,7 @@
               <input id="pCBS" inputmode="decimal" autocomplete="off" value="">
             </label>
           </div>
-          <p class="ajuda">O motor oficial usa exatamente estes percentuais. A estimativa aplica a fração de CBS do DAS e mantém o IBS-teste de 0,1% (2027 revisto pela LC 214). <strong>Confira no PGDAS-D.</strong></p>
+          <p class="ajuda">O motor recebe estes dois percentuais como alíquotas efetivas. A CBS já vem preenchida com a fração estimada do DAS; se o PGDAS-D indicar outro valor, ajuste aqui. O IBS-teste de 0,1% (LC 214/2025) é mantido. <strong>Confira no PGDAS-D.</strong></p>
           <button type="button" class="secundario pequeno" id="reestimar">Recalcular estimativa</button>
         </details>
       </section>
@@ -103,7 +107,7 @@
         <p class="dica">Informe o NCM do produto. O cClassTrib padrão <strong>000001</strong> é a tributação integral; outros códigos podem exigir NCM/NBS específico e a API explicará a inconsistência.</p>
 
         <button type="submit" class="grande" id="calcular">Calcular pelo motor oficial</button>
-        <p class="micro">O cálculo roda na API oficial do Simples Nacional (Receita Federal), em <span id="apiHost">—</span>. O DAS é estimado localmente.</p>
+        <p class="micro">O cálculo de IBS/CBS roda no serviço que executa o motor da Receita Federal, em <span id="apiHost">—</span>. O DAS é estimado localmente e não substitui o PGDAS-D.</p>
       </section>
     </div>
   </form>
@@ -113,6 +117,9 @@
       <h2>Resultado</h2>
       <p>Preencha os dados e clique em <strong>Calcular pelo motor oficial</strong>.</p>
     </div>
+    <noscript>
+      <p class="micro">Esta calculadora precisa de JavaScript: o DAS é estimado no seu navegador e o IBS/CBS é consultado no motor da Receita Federal.</p>
+    </noscript>
   </section>
 
   <section class="fora" aria-labelledby="titulo-fora">

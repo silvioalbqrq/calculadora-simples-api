@@ -4,7 +4,29 @@
 (() => {
   "use strict";
 
- const API = window.API_BASE || "https://calculadora-simples-api-1.onrender.com";
+  // Base da API do motor do Simples (Render). PRECISA do sufixo "/api": as rotas
+  // são /api/versao e /api/calculadora/... — sem ele, tudo responde 404 e a página
+  // nasce "motor offline". Ordem: ?api= da URL > window.API_BASE > padrão.
+  const HOST_PADRAO = "https://calculadora-simples-api-1.onrender.com";
+  const API = (() => {
+    const daUrl = new URLSearchParams(location.search).get("api");
+    let base = String(daUrl || window.API_BASE || HOST_PADRAO).trim().replace(/\/+$/, "");
+    if (!/\/api$/.test(base)) base += "/api";
+    return base;
+  })();
+
+  // O plano gratuito do Render hiberna: o primeiro acesso depois de um tempo
+  // parado pode levar ~1 min. Esperamos mais que o padrão do navegador.
+  const ESPERA_MS = 90000;
+  async function buscar(caminho, opcoes) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), ESPERA_MS);
+    try {
+      return await fetch(API + caminho, Object.assign({}, opcoes, { signal: ctl.signal }));
+    } finally {
+      clearTimeout(t);
+    }
+  }
   // cbsFixo: percentual de CBS já escolhido (estimado ou digitado). Null = recalcular pelo anexo.
   const state = { atividades: [], versao: null, cbsFixo: null, calculando: false };
 
@@ -37,7 +59,8 @@
   const valor4 = (n) => (Number.isFinite(n) ? n.toFixed(4) : "0.0000");
 
   function hojeISO() {
-    return new Date().toISOString().slice(0, 10);
+    const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   }
 
   function atualAtividade() {
@@ -60,11 +83,19 @@
     if (!(rbt12 > 0) || !ANEXOS[anexo]) return null;
 
     const tabela = ANEXOS[anexo];
+
+    // Fora do Simples ou acima do sublimite: não se estima o DAS. Extrapolar a
+    // última faixa produziria uma alíquota inventada (ex.: 11,44% com RBT12 5 mi).
+    if (rbt12 > LIMITE) {
+      return { fora: true, motivo: "RBT12 acima de R$ 4,8 milhões: a empresa não está no Simples Nacional; não há DAS a estimar." };
+    }
+    if (rbt12 > SUBLIMITE) {
+      return { fora: true, motivo: "RBT12 acima do sublimite de R$ 3,6 milhões: ICMS/ISS saem do DAS, então a alíquota efetiva do anexo não se aplica." };
+    }
+
     const faixa = tabela.faixas.find((f) => rbt12 <= f[0]) || tabela.faixas[tabela.faixas.length - 1];
     const efetiva = ((rbt12 * faixa[1] / 100 - faixa[2]) / rbt12) * 100;
     const avisos = [];
-    if (rbt12 > LIMITE) avisos.push("RBT12 acima de R$ 4,8 milhões: fora do limite do Simples.");
-    else if (rbt12 > SUBLIMITE) avisos.push("RBT12 acima do sublimite de R$ 3,6 milhões: ICMS/ISS fora do DAS; a estimativa não se aplica.");
 
     const fr = Number.isFinite(folha) ? folha / rbt12 : NaN;
     if (atividade && atividade.sujeitaFatorR && Number.isFinite(fr)) {
@@ -96,6 +127,13 @@
       $("#dasValor").textContent = money(0);
       $("#parcelaCbs").textContent = money(0);
       $("#dasFonte").textContent = "Atividade 90: operação não tributável; sem DAS sobre esta receita.";
+      return;
+    }
+    if (d.fora) {
+      $("#aliqDas").textContent = "Não se aplica";
+      $("#dasValor").textContent = "—";
+      $("#parcelaCbs").textContent = "—";
+      $("#dasFonte").textContent = d.motivo;
       return;
     }
 
@@ -156,7 +194,7 @@
   // ---------- Catálogo e versão ----------
   async function carregarVersao() {
     try {
-      const r = await fetch(API + "/versao", { headers: { Accept: "application/json" } });
+      const r = await buscar("/versao", { headers: { Accept: "application/json" } });
       if (!r.ok) throw new Error("HTTP " + r.status);
       const v = await r.json();
       state.versao = v;
@@ -166,7 +204,7 @@
     } catch (e) {
       $("#motor").textContent = "motor offline";
       $("#motor").className = "motor erro";
-      $("#versao").textContent = "Motor oficial indisponível. Inicie a API na porta 8082 para calcular.";
+      $("#versao").textContent = "Motor indisponível agora. Se o serviço do Render estava parado, ele acorda em até um minuto — recarregue a página.";
     }
   }
 
@@ -176,13 +214,13 @@
     const sel = $("#atividade");
     const anterior = sel.value;
     try {
-      const r = await fetch(API + "/calculadora/simples-nacional/atividades?data=" + encodeURIComponent(data), {
+      const r = await buscar("/calculadora/simples-nacional/atividades?data=" + encodeURIComponent(data), {
         headers: { Accept: "application/json" },
       });
       if (!r.ok) throw new Error("HTTP " + r.status);
       const todas = await r.json();
       // O catálogo é por documento; sem filtro (ou documento fora do catálogo) mostra todas.
-      state.atividades = todas.filter((a) => a.disponivel && (a.tpDocsAdmissiveis || []).includes(doc));
+      state.atividades = todas.filter((a) => a.disponivel && (a.tpDocsAdmissiveis || []).map(String).includes(String(doc)));
       if (!state.atividades.length) state.atividades = todas.filter((a) => a.disponivel);
       sel.innerHTML = "";
       for (const a of state.atividades) {
@@ -203,7 +241,7 @@
       atualizarAjudaAtividade();
     } catch (e) {
       sel.innerHTML = '<option value="">Catálogo indisponível</option>';
-      $("#atividadeAjuda").textContent = "Inicie o motor oficial para carregar as atividades.";
+      $("#atividadeAjuda").textContent = "Não foi possível carregar o catálogo. Confira a conexão com o motor e recarregue.";
     }
   }
 
@@ -303,6 +341,7 @@
     $("#atividade").addEventListener("change", function () {
       sugerirAnexo();
       atualizarAjudaAtividade();
+      renderDas();
     });
     $("#tpDoc").addEventListener("change", function () {
       carregarAtividades().then(function () {
@@ -316,12 +355,12 @@
         renderDas();
       });
     });
-    for (const camp of ["#pIBS", "#pCBS"]) {
-      document.querySelector(camp).addEventListener("input", function () {
-        state.cbsFixo = $("#pCBS").value;
-        renderDas();
-      });
-    }
+    // Só o campo de CBS fixa o percentual; mexer no IBS não deve congelar a CBS.
+    $("#pCBS").addEventListener("input", function () {
+      state.cbsFixo = $("#pCBS").value;
+      renderDas();
+    });
+    $("#pIBS").addEventListener("input", renderDas);
     $("#reestimar").addEventListener("click", function () {
       state.cbsFixo = null;
       $("#pIBS").value = pctInput(0.1);
@@ -355,7 +394,7 @@
     box.innerHTML = "";
     const objetos = Array.isArray(j.objetos) ? j.objetos : [];
     if (!objetos.length) {
-      falha("Sem itens calculados", "O motor respondeu sem itens. Confira a operacao.", []);
+      falha("Sem itens calculados", "O motor respondeu sem itens. Confira a operação.", []);
       return;
     }
 
@@ -364,7 +403,8 @@
     const baseTotal = Number(j.total && j.total.vRBSNtot != null ? j.total.vRBSNtot : enviado.bases.reduce(function (s, b) { return s + b; }, 0));
     const is = Number(j.total && j.total.totalIs != null ? j.total.totalIs : 0);
     const d = dadosDas();
-    const dasOperacao = d && !d.zero ? baseTotal * d.efetiva / 100 : 0;
+    const dasAplicavel = d && !d.zero && !d.fora && Number.isFinite(d.efetiva);
+    const dasOperacao = dasAplicavel ? baseTotal * d.efetiva / 100 : null;
 
     const h2 = document.createElement("h2");
     h2.textContent = "Resultado";
@@ -382,9 +422,13 @@
 
     const compara = document.createElement("p");
     compara.className = "dica";
-    compara.textContent = "DAS estimado sobre a mesma base: " + money(dasOperacao) +
-      (d && !d.zero ? " (alíquota efetiva " + pct(d.efetiva) + ", Anexo " + d.anexo + ")." : ".") +
-      (is > 0 ? " Imposto Seletivo informado: " + money(is) + "." : "");
+    let textoDas;
+    if (d && d.zero) textoDas = "Atividade 90: operação não tributável, sem DAS sobre esta receita.";
+    else if (d && d.fora) textoDas = "DAS não estimado: " + d.motivo;
+    else if (dasAplicavel) textoDas = "DAS estimado sobre a mesma base: " + money(dasOperacao) +
+      " (alíquota efetiva " + pct(d.efetiva) + ", Anexo " + d.anexo + ").";
+    else textoDas = "Informe o RBT12 para estimar o DAS sobre esta base.";
+    compara.textContent = textoDas + (is > 0 ? " Imposto Seletivo informado: " + money(is) + "." : "");
     box.append(compara);
 
     const tabela = document.createElement("table");
@@ -442,12 +486,12 @@
     if (!Number.isFinite(pIBS) || pIBS < 0 || pIBS > 100) problemas.push("Alíquota efetiva do IBS inválida (0 a 100%).");
     if (!Number.isFinite(pCBS) || pCBS < 0 || pCBS > 100) problemas.push("Alíquota efetiva da CBS inválida (0 a 100%).");
     for (const it of itens) {
-      if (!(it.base > 0)) problemas.push("Item " + it.numero + ": informe a base de calculo.");
-      if (it.ncm.length !== 8) problemas.push("Item " + it.numero + ": o NCM deve ter 8 digitos.");
-      if (it.cct.length !== 6) problemas.push("Item " + it.numero + ": o cClassTrib deve ter 6 digitos.");
+      if (!(it.base > 0)) problemas.push("Item " + it.numero + ": informe a base de cálculo.");
+      if (it.ncm.length !== 8) problemas.push("Item " + it.numero + ": o NCM deve ter 8 dígitos.");
+      if (it.cct.length !== 6) problemas.push("Item " + it.numero + ": o cClassTrib deve ter 6 dígitos.");
     }
     if (problemas.length) {
-      falha("Confira os dados", "", problemas.map(function (p) { return { titulo: "Atencao", detalhe: p }; }));
+      falha("Confira os dados", "", problemas.map(function (p) { return { titulo: "Atenção", detalhe: p }; }));
       $("#resultado").scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
@@ -477,7 +521,7 @@
     botao.disabled = true;
     botao.textContent = "Calculando…";
     try {
-      const r = await fetch(API + "/calculadora/observabilidade/simples-nacional", {
+      const r = await buscar("/calculadora/observabilidade/simples-nacional", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload),
@@ -493,9 +537,9 @@
       }
     } catch (e) {
       falha(
-        "Motor oficial indisponível",
-        "Não foi possível falar com a API do Simples Nacional. Verifique se o servico esta rodando na porta 8082 e recarregue a pagina.",
-        [{ titulo: e.message, detalhe: "" }]
+        "Motor indisponível",
+        "Não foi possível falar com o motor do Simples. Se o serviço no Render estava hibernando, aguarde um minuto e clique de novo.",
+        [{ titulo: e.name === "AbortError" ? "Tempo esgotado (90 s)" : e.message, detalhe: "" }]
       );
     } finally {
       state.calculando = false;

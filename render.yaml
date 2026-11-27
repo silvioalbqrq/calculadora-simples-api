@@ -1,0 +1,18 @@
+# Blueprint do Render: um Web Service Docker com o motor do Simples Nacional.
+# No painel: New -> Blueprint -> este repo. O nome do servico vira o subdominio
+# (<nome>.onrender.com); se ele ja existir, o Render acrescenta um sufixo.
+services:
+  - type: web
+    name: calculadora-simples-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/versao
+    autoDeploy: true
+    envVars:
+      - key: ORIGENS_PERMITIDAS
+        value: https://silvioalbqrq.github.io
+      - key: JAVA_EXE
+        value: /opt/java/openjdk/bin/java
+      - key: SPRING_PROFILES_ACTIVE
+        value: offline

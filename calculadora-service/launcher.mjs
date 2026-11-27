@@ -27,7 +27,13 @@ function lerEnv(arquivo) {
 
 const envFile = lerEnv(path.join(path.dirname(import.meta.dirname), "calculadora-service", ".env"));
 const env = { ...envFile, ...process.env };
-if (/\s/.test(JAR_DIR)) env.SPRING_DATASOURCE_URL = "jdbc:sqlite:file:" + DB + "?mode=ro&date_class=TEXT&date_string_format=yyyy-MM-dd";
+// O app abre o SQLite em ./calculadora/db relativo ao cwd (motor-simples/target),
+// onde a base nao esta (ela fica em motor-simples/calculadora/db). Sem isso o
+// boot morre no datasource e o Render fica em "no-deploy". Aponta sempre para o
+// arquivo real; um SPRING_DATASOURCE_URL explicito no ambiente tem prioridade.
+if (!env.SPRING_DATASOURCE_URL) {
+  env.SPRING_DATASOURCE_URL = "jdbc:sqlite:file:" + DB + "?mode=ro&date_class=TEXT&date_string_format=yyyy-MM-dd";
+}
 
 env.ORIGENS_PERMITIDAS = env.ORIGENS_PERMITIDAS || "http://localhost:8081,http://127.0.0.1:8081";
 env.APP_CORS_ALLOWED_ORIGINS = env.ORIGENS_PERMITIDAS;
@@ -38,12 +44,30 @@ env.SERVER_PORT = String(PORTA);
 if (process.env.METRICAS_PORT) env.MANAGEMENT_SERVER_PORT = process.env.METRICAS_PORT;
 else env.MANAGEMENT_SERVER_PORT = "";
 
-const exe = process.env.JAVA_EXE || JAVA;
-const filho = spawn(exe, ["-Xmx512m", "-jar", JAR, "--server.port=" + PORTA], {
-  cwd: JAR_DIR,
-  env,
-  stdio: "inherit",
-});
+// .env tambem pode definir JAVA_EXE; por isso usa o env mesclado, nao process.env.
+const exe = env.JAVA_EXE || JAVA;
+// O plano gratuito do Render tem 512 MB no total: -Xmx512m somado a metaspace e
+// stack estoura e o container morre no boot (port scan timeout / 502). O padrao
+// deixa folga; quem tem mais memoria sobe JAVA_MEM (ex.: 768m).
+const MEMORIA = process.env.JAVA_MEM || "320m";
+const filho = spawn(
+  exe,
+  [
+    "-Xmx" + MEMORIA,
+    "-XX:MaxMetaspaceSize=128m",
+    "-XX:+UseSerialGC",
+    "-XX:TieredStopAtLevel=1",
+    "-Djava.awt.headless=true",
+    "-jar", JAR,
+    "--server.port=" + PORTA,
+  ],
+  {
+    cwd: JAR_DIR,
+    env,
+    stdio: "inherit",
+  }
+);
+console.log("Motor: " + JAR + " | porta " + PORTA + " | heap " + MEMORIA + " | CORS " + env.ORIGENS_PERMITIDAS);
 
 // Supabase pode dormir: mantem acordado com 1 GET de minuto em minuto (falha em silencio).
 if (process.env.ACORDAR_URL) {
