@@ -159,17 +159,31 @@
     });
   }
 
+  function ehServico() {
+    return $("#tpDoc").value === "91";
+  }
+
+  function atualizarCamposDoc() {
+    const serv = ehServico();
+    document.querySelectorAll("#itens .item").forEach(function (row) {
+      row.querySelector(".rot-ncm").hidden = serv;
+      row.querySelector(".rot-nbs").hidden = !serv;
+    });
+  }
+
   function criarItem(dados = {}) {
     const row = document.createElement("div");
     row.className = "item";
     row.innerHTML =
       '<span class="item-num" aria-hidden="true"></span>' +
       '<label>Base (R$)<input class="base" data-rotulo="Base de cálculo" inputmode="decimal" autocomplete="off" placeholder="1.000,00"></label>' +
-      '<label>NCM<input class="ncm" data-rotulo="NCM" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="22030000"></label>' +
-      '<label>cClassTrib<input class="cct" data-rotulo="cClassTrib" inputmode="numeric" autocomplete="off" maxlength="6" value="000001"></label>' +
+      '<label class="rot-ncm">NCM<input class="ncm" data-rotulo="NCM" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="22030000"></label>' +
+      '<label class="rot-nbs">NBS<input class="nbs" data-rotulo="NBS" inputmode="numeric" autocomplete="off" maxlength="9" placeholder="100000000"></label>' +
+      '<label class="rot-cct">cClassTrib<input class="cct" data-rotulo="cClassTrib" inputmode="numeric" autocomplete="off" maxlength="6" value="000001"></label>' +
       '<button type="button" class="remover" title="Remover item" aria-label="Remover item">×</button>';
     row.querySelector(".base").value = dados.base || "";
     row.querySelector(".ncm").value = dados.ncm || "";
+    row.querySelector(".nbs").value = dados.nbs || "";
     row.querySelector(".cct").value = dados.cct || "000001";
     row.querySelector(".remover").addEventListener("click", () => {
       if (document.querySelectorAll("#itens .item").length === 1) return;
@@ -179,6 +193,7 @@
     });
     row.querySelector(".base").addEventListener("input", renderDas);
     $("#itens").append(row);
+    atualizarCamposDoc();
     renumerar();
   }
 
@@ -187,6 +202,7 @@
       numero: i + 1,
       base: parseNum(row.querySelector(".base").value),
       ncm: row.querySelector(".ncm").value.replace(/\D/g, ""),
+      nbs: row.querySelector(".nbs").value.replace(/\D/g, ""),
       cct: row.querySelector(".cct").value.replace(/\D/g, ""),
     }));
   }
@@ -344,6 +360,7 @@
       renderDas();
     });
     $("#tpDoc").addEventListener("change", function () {
+      atualizarCamposDoc();
       carregarAtividades().then(function () {
         sugerirAnexo();
         renderDas();
@@ -487,7 +504,8 @@
     if (!Number.isFinite(pCBS) || pCBS < 0 || pCBS > 100) problemas.push("Alíquota efetiva da CBS inválida (0 a 100%).");
     for (const it of itens) {
       if (!(it.base > 0)) problemas.push("Item " + it.numero + ": informe a base de cálculo.");
-      if (it.ncm.length !== 8) problemas.push("Item " + it.numero + ": o NCM deve ter 8 dígitos.");
+      if (tpDoc !== "91" && it.ncm.length !== 8) problemas.push("Item " + it.numero + ": o NCM deve ter 8 dígitos.");
+      if (tpDoc === "91" && it.nbs && it.nbs.length !== 9) problemas.push("Item " + it.numero + ": o NBS deve ter 9 dígitos (ou ficar em branco).");
       if (it.cct.length !== 6) problemas.push("Item " + it.numero + ": o cClassTrib deve ter 6 dígitos.");
     }
     if (problemas.length) {
@@ -507,7 +525,8 @@
           numero: it.numero,
           cAtivSN: atividade.codigo,
           cClassTrib: it.cct,
-          ncm: it.ncm,
+          ncm: tpDoc === "91" ? "" : it.ncm,
+          nbs: tpDoc === "91" ? it.nbs : "",
           baseCalculo: valor2(it.base),
           valorImpostoSeletivo: "0.00",
           pIBSSN: valor4(pIBS),

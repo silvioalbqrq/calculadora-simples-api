@@ -91,6 +91,7 @@ h2 { font-size: 1.25rem; font-weight: 800; margin: 0 0 18px; }
 .campos.linha2 { grid-template-columns: 1.2fr 1fr; }
 .campos.curto { grid-template-columns: 1fr 1fr; }
 label { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; font-weight: 700; color: #34445c; }
+[hidden] { display: none !important; }
 input, select {
   width: 100%;
   min-height: 42px;
