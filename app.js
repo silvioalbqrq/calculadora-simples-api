@@ -251,7 +251,7 @@
     let sugerido = null;
     if (a.sujeitaFatorR) sugerido = fatorR() >= 0.28 ? 'III' : 'V';
     else if (a.anexoSemFatorR) {
-      const m = a.anexoSemFatorR.match(/(I{1,3}|IV|V)/);
+      const m = a.anexoSemFatorR.match(/(III|II|IV|I|V)/);
       if (m) sugerido = m[1];
     }
     if (sugerido && ANEXOS[sugerido]) $('#anexo').value = sugerido;
