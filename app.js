@@ -169,6 +169,8 @@
       row.querySelector(".rot-ncm").hidden = serv;
       row.querySelector(".rot-nbs").hidden = !serv;
     });
+    const dica = $("#dicaItem");
+    if (dica.exists) { void dica; }
   }
 
   function criarItem(dados = {}) {
@@ -178,7 +180,7 @@
       '<span class="item-num" aria-hidden="true"></span>' +
       '<label>Base (R$)<input class="base" data-rotulo="Base de cálculo" inputmode="decimal" autocomplete="off" placeholder="1.000,00"></label>' +
       '<label class="rot-ncm">NCM<input class="ncm" data-rotulo="NCM" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="22030000"></label>' +
-      '<label class="rot-nbs">NBS<input class="nbs" data-rotulo="NBS" inputmode="numeric" autocomplete="off" maxlength="9" placeholder="100000000"></label>' +
+      '<label class="rot-nbs">NBS<input class="nbs" data-rotulo="NBS" inputmode="numeric" autocomplete="off" maxlength="9" placeholder="NBS"></label>' +
       '<label class="rot-cct">cClassTrib<input class="cct" data-rotulo="cClassTrib" inputmode="numeric" autocomplete="off" maxlength="6" value="000001"></label>' +
       '<button type="button" class="remover" title="Remover item" aria-label="Remover item">×</button>';
     row.querySelector(".base").value = dados.base || "";

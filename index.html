@@ -105,7 +105,8 @@
         </div>
         <div id="itens" class="itens"></div>
 
-        <p class="dica">Informe o NCM do produto. O cClassTrib padrão <strong>000001</strong> é a tributação integral; outros códigos podem exigir NCM/NBS específico e a API explicará a inconsistência.</p>
+<p class="dica" id="dicaItem">Informe o NCM (NF-e/NFC-e) <em>ou</em> o NBS (NFSe) &mdash; o motor valida o que for informado. O cClassTrib padr&atilde;o <strong>000001</strong> &eacute; a tributa&ccedil;&atilde;o integral; outros c&oacute;digos podem exigir NCM/NBS espec&iacute;fico e a API explicar&aacute; a inconsist&ecirc;ncia.</p>
+
 
         <button type="submit" class="grande" id="calcular">Calcular pelo motor oficial</button>
         <p class="micro">O cálculo de IBS/CBS roda no serviço que executa o motor da Receita Federal, em <span id="apiHost">—</span>. O DAS é estimado localmente e não substitui o PGDAS-D.</p>
