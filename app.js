@@ -455,6 +455,7 @@
     for (const t of ["Item", "Base", "IBS", "CBS", "Situação"]) {
       const th = document.createElement("th");
       th.textContent = t;
+      if (t === "Base" || t === "IBS" || t === "CBS") th.className = "num";
       trh.append(th);
     }
     thead.append(trh);
