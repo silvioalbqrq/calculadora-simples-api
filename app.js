@@ -169,8 +169,6 @@
       row.querySelector(".rot-ncm").hidden = serv;
       row.querySelector(".rot-nbs").hidden = !serv;
     });
-    const dica = $("#dicaItem");
-    if (dica.exists) { void dica; }
   }
 
   function criarItem(dados = {}) {
